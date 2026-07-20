@@ -5,6 +5,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const messageDiv = document.getElementById("message");
   let messageTimeoutId;
 
+  if (!activitiesList || !activitySelect || !signupForm || !messageDiv) {
+    console.error("Required activity page elements are missing.");
+    return;
+  }
+
   function escapeHtml(value) {
     return String(value)
       .replace(/&/g, "&amp;")
@@ -40,8 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
 
-        const spotsLeft = details.max_participants - details.participants.length;
-        const participants = Array.isArray(details.participants) ? details.participants : [];
+        const participantList = Array.isArray(details.participants) ? details.participants : [];
+        const spotsLeft = Math.max(0, Number(details.max_participants) - participantList.length);
+        const participants = participantList;
         const participantsMarkup = participants.length
           ? `<ul class="participants-list">${participants
               .map(
@@ -49,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   <li class="participant-item">
                     <span class="participant-name">${escapeHtml(participant)}</span>
                     <button
+                      type="button"
                       class="participant-delete"
                       data-activity="${escapeHtml(name)}"
                       data-participant="${escapeHtml(participant)}"
@@ -95,10 +102,15 @@ document.addEventListener("DOMContentLoaded", () => {
               }
             );
 
-            const result = await response.json();
+            let result = {};
+            try {
+              result = await response.json();
+            } catch (error) {
+              result = {};
+            }
 
             if (response.ok) {
-              showMessage(result.message, "success");
+              showMessage(result.message || "Participant removed successfully.", "success");
               await fetchActivities();
             } else {
               showMessage(result.detail || "An error occurred", "error");
